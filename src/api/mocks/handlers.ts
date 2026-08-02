@@ -1,5 +1,4 @@
 import { http, HttpResponse, delay } from 'msw'
-import type { LoginRequest, LoginResponse } from '@/features/auth/types'
 import type { Integration } from '@/features/integrations/types'
 import type { TaskIntegration } from '@/features/taskSync/types'
 import type {
@@ -16,7 +15,6 @@ import { meetings } from './data/meetings'
 import { integrations } from './data/integrations'
 import { taskIntegrations } from './data/taskIntegrations'
 import { notificationEvents, notificationPreferences } from './data/notifications'
-import { mockUser } from './data/user'
 import { answerFromTranscript } from '@/features/meetings/lib/chatEngine'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL
@@ -48,19 +46,6 @@ function mockExternalUrl(provider: TaskSyncProvider, itemId: string): string {
 }
 
 export const handlers = [
-  http.post(`${API_BASE}/auth/login`, async ({ request }) => {
-    await delay(400)
-    const body = (await request.json()) as LoginRequest
-    if (!body.email || !body.password || body.password.length < 4) {
-      return HttpResponse.json({ message: 'Invalid email or password.' }, { status: 401 })
-    }
-    const response: LoginResponse = {
-      token: 'mock-session-token',
-      user: { ...mockUser, email: body.email },
-    }
-    return HttpResponse.json(response)
-  }),
-
   http.get(`${API_BASE}/meetings`, async () => {
     await delay(500)
     const summaries = meetingsState.map(({ transcript: _transcript, ...rest }) => rest)

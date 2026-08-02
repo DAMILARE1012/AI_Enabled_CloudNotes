@@ -1,21 +1,16 @@
-import { useNavigate } from 'react-router-dom'
+import { useAuth } from 'react-oidc-context'
 import { useAppDispatch, useAppSelector } from '@/app/hooks'
 import { themeToggled, mobileNavOpened } from '@/app/uiSlice'
-import { loggedOut } from '@/features/auth/authSlice'
+import { cognitoSignOutRedirect } from '@/auth/cognitoConfig'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
 import { NotificationBell } from '@/features/notifications/components/NotificationBell'
 
 export function Topbar() {
   const dispatch = useAppDispatch()
-  const navigate = useNavigate()
+  const auth = useAuth()
   const theme = useAppSelector((state) => state.ui.theme)
-  const user = useAppSelector((state) => state.auth.user)
-
-  function handleLogout() {
-    dispatch(loggedOut())
-    navigate('/login', { replace: true })
-  }
+  const displayName = auth.user?.profile.name ?? auth.user?.profile.email
 
   return (
     <header className="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-slate-800 sm:px-6">
@@ -78,8 +73,8 @@ export function Topbar() {
 
         <NotificationBell />
 
-        {user && <Avatar name={user.name} color={user.avatarColor} size={32} />}
-        <Button variant="ghost" size="sm" onClick={handleLogout}>
+        {displayName && <Avatar name={displayName} color="#6366f1" size={32} />}
+        <Button variant="ghost" size="sm" onClick={cognitoSignOutRedirect}>
           Log out
         </Button>
       </div>
