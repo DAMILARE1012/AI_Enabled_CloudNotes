@@ -22,5 +22,5 @@ AI_Enabled_CloudNotes is an intelligent cloud-based note-taking application powe
 - Writers capturing and refining creative ideas.
 
 ---
-
+## Summary
 AI_Enabled_CloudNotes is designed to make note-taking smarter, faster, and more collaborative.
