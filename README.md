@@ -45,11 +45,48 @@ API, so pointing it at one later is just a `.env` change.
 
 ```bash
 npm install
-cp .env.example .env.local   # defaults already work out of the box
+cp .env.example .env.local   # then fill in the Cognito values below
 npm run dev                  # http://localhost:5173
 ```
 
-Log in with any email and a password of 4+ characters — auth is mocked.
+### Authentication
+
+Sign-in/sign-up is handled by **AWS Cognito's Hosted UI** via `oidc-client-ts` +
+`react-oidc-context` (`src/auth/cognitoConfig.ts`, wired up in `src/main.tsx`). There's
+no mock login anymore — you need a real Cognito User Pool. To set one up:
+
+1. In the AWS Console, create a **Cognito User Pool** (or use an existing one).
+2. Under the pool's **App integration** tab, create an **App client**:
+   - Enable the **Hosted UI** / "Use the Cognito Hosted UI" option.
+   - Under **Hosted UI settings**, add allowed **callback URLs** (e.g.
+     `http://localhost:5173/auth/callback`) and **sign-out URLs** (e.g.
+     `http://localhost:5173/login`). The callback URL must be the dedicated
+     `/auth/callback` route, not the app root — see the note below.
+   - Under **OAuth 2.0 grant types**, enable **Authorization code grant**.
+   - Under **OpenID Connect scopes**, enable at least `openid`, `email`, `profile`.
+   - Set up a **Cognito domain** (either a Cognito-hosted domain or your own) under
+     **App integration → Domain**.
+3. Copy these into `.env.local`:
+   - `VITE_COGNITO_AUTHORITY` → `https://cognito-idp.<region>.amazonaws.com/<user-pool-id>`
+   - `VITE_COGNITO_CLIENT_ID` → the App client ID
+   - `VITE_COGNITO_DOMAIN` → the Hosted UI domain, e.g.
+     `https://your-domain.auth.<region>.amazoncognito.com`
+   - `VITE_COGNITO_REDIRECT_URI` / `VITE_COGNITO_LOGOUT_URI` → must exactly match a
+     callback/sign-out URL registered on the App client in step 2
+
+Until those are filled in with real values, `/login` will render but `Sign in` will
+redirect to a non-existent Cognito domain — the rest of the app (meetings, notes,
+settings) is unaffected since it's still served from the local MSW mocks.
+
+**Why `/auth/callback` and not the app root:** the redirect URI must point at its own
+route (`src/features/auth/pages/AuthCallbackPage.tsx`) rather than `/`, because `/`
+unconditionally redirects to `/dashboard` — if Cognito's `redirect_uri` pointed there,
+that redirect would fire and strip the `?code=&state=` query params before
+`react-oidc-context` finishes exchanging the code for tokens, silently breaking sign-in.
+
+**Also note:** Vite only reads `.env*` files when the dev server starts. If you edit
+`.env.local` while `npm run dev` is already running, restart it — otherwise the app
+keeps using the stale values.
 
 ### Scripts
 
@@ -69,6 +106,7 @@ Log in with any email and a password of 4+ characters — auth is mocked.
 ```
 src/
   app/            # Redux store, router, cross-cutting UI state
+  auth/            # Cognito/OIDC config (react-oidc-context)
   api/             # RTK Query base config + MSW mocks/seed data
   features/        # auth, dashboard, meetings, integrations — each self-contained
   components/      # shared ui/ primitives and layout/ shell

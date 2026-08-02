@@ -1,11 +1,20 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
-import { useAppSelector } from '@/app/hooks'
+import { useAuth } from 'react-oidc-context'
+import { Spinner } from '@/components/ui/Spinner'
 
 export function ProtectedRoute() {
-  const token = useAppSelector((state) => state.auth.token)
+  const auth = useAuth()
   const location = useLocation()
 
-  if (!token) {
+  if (auth.isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Spinner label="Checking your session" />
+      </div>
+    )
+  }
+
+  if (!auth.isAuthenticated) {
     return <Navigate to="/login" replace state={{ from: location }} />
   }
 
